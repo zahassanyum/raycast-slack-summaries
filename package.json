@@ -16,7 +16,18 @@
       "title": "Summarize Channel",
       "subtitle": "Summarize a Slack channel threads",
       "description": "Summarize a Slack channel threads",
-      "mode": "view"
+      "mode": "view",
+      "arguments": [],
+      "preferences": [
+        {
+          "name": "openaiPrompt",
+          "type": "textfield",
+          "title": "OpenAI prompt",
+          "description": "Custom prompt used when summarising a channel",
+          "placeholder": "Leave blank to use the built-in instructions",
+          "required": false
+        }
+      ]
     },
     {
       "name": "summarize-thread",
@@ -27,9 +38,19 @@
       "arguments": [
         {
           "name": "thread",
-          "placeholder": "https://slack.com/archives/{channel_id}/{thread_ts}",
           "type": "text",
-          "required": true
+          "placeholder": "Thread URL or ts",
+          "required": false
+        }
+      ],
+      "preferences": [
+        {
+          "name": "openaiPrompt",
+          "type": "textfield",
+          "title": "OpenAI prompt",
+          "description": "Custom prompt used when summarising a thread",
+          "placeholder": "Leave blank to use the built-in instructions",
+          "required": false
         }
       ]
     }
@@ -58,12 +79,21 @@
   },
   "preferences": [
     {
-      "name": "OPENAI_API_KEY",
+      "name": "openaiApiKey",
       "description": "OpenAI API Key",
       "type": "password",
       "required": true,
       "title": "OpenAI API Key",
       "placeholder": "{OpenAI API Key}"
+    },
+    {
+      "name": "defaultOpenaiModel",
+      "type": "textfield",
+      "title": "Default OpenAI model",
+      "description": "Model name passed to OpenAI when no model is specified",
+      "placeholder": "gpt-4.1",
+      "default": "gpt-4.1",
+      "required": true
     }
   ]
 }

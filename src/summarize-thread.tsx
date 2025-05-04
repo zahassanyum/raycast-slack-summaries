@@ -1,16 +1,22 @@
-import { ActionPanel, Action, Detail, LaunchProps, showToast, Toast } from "@raycast/api";
+import { ActionPanel, Action, Detail, Form, LaunchProps, showToast, Toast, getPreferenceValues } from "@raycast/api";
 import { usePromise, runAppleScript, showFailureToast } from "@raycast/utils";
+import { useState } from "react";
 import { summarizeThread } from "./utils/summarizer.js";
 
 interface Arguments {
-  thread: string;
+  thread?: string;
 }
 
-export default function Command({ arguments: { thread } }: LaunchProps<{ arguments: Arguments }>) {
+export default function Command({ arguments: { thread: initialThread } }: LaunchProps<{ arguments: Arguments }>) {
+  const [thread, setThread] = useState<string | undefined>(initialThread);
+
+  const preferences = getPreferenceValues();
+  const customPrompt = preferences.openaiPrompt;
+
   /* ---------- Helpers ---------------------- */
 
   /* Wrapped summarizer with Animated Toast */
-  async function handleSummarize(thread: string) {
+  async function handleSummarize(threadId: string) {
     // Animated toast while the summary is being generated
     const toast = await showToast({
       style: Toast.Style.Animated,
@@ -18,7 +24,7 @@ export default function Command({ arguments: { thread } }: LaunchProps<{ argumen
     });
 
     try {
-      const summary = await summarizeThread(thread);
+      const summary = await summarizeThread(threadId, customPrompt);
 
       toast.style = Toast.Style.Success;
       toast.title = "Completed";
@@ -41,7 +47,7 @@ export default function Command({ arguments: { thread } }: LaunchProps<{ argumen
     if (!summary) return;
 
     const html = `<html><meta charset="utf-8"><body>
-      <pre style="white-space:pre-wrap;font-family:inherit">
+      <pre style="white-space:pre-wrap;font-family:sans-serif;font-size:14px;line-height:1.5;">
       ${summary.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
       </pre></body></html>`;
 
@@ -61,20 +67,49 @@ export default function Command({ arguments: { thread } }: LaunchProps<{ argumen
   }
 
   /* ---------- Data fetching ---------- */
-  const { isLoading, data: summary, error, revalidate } = usePromise(handleSummarize, [thread]);
+  const {
+    isLoading,
+    data: summary,
+    error,
+    revalidate,
+  } = usePromise(
+    async (t) => {
+      if (!t) return undefined; // skip fetch until we have a thread id
+      return handleSummarize(t);
+    },
+    [thread],
+  );
 
   /* ---------- UI ---------- */
-  return (
-    <Detail
-      isLoading={isLoading}
-      markdown={error ? `**Error:** Couldn't generate summary.\n\n\${error.message}` : (summary ?? "Summarizing…")}
-      navigationTitle="Thread Summary"
-      actions={
-        <ActionPanel>
-          <Action title="Regenerate" onAction={revalidate} />
-          <Action title="Open in HTML" onAction={handleOpenHtml} />
-        </ActionPanel>
-      }
-    />
-  );
+  if (!thread) {
+    return (
+      <Form
+        actions={
+          <ActionPanel>
+            <Action.SubmitForm title="Summarize" onSubmit={(values: { thread: string }) => setThread(values.thread)} />
+          </ActionPanel>
+        }
+      >
+        <Form.TextField id="thread" title="Thread URL or Timestamp" placeholder="Paste Slack thread link…" />
+      </Form>
+    );
+  } else {
+    return (
+      <Detail
+        isLoading={isLoading}
+        markdown={
+          error
+            ? `**Error:** Couldn't generate summary.\n\n${error instanceof Error ? error.message : String(error)}`
+            : (summary ?? "Summarizing…")
+        }
+        navigationTitle="Thread summary"
+        actions={
+          <ActionPanel>
+            <Action title="Regenerate" onAction={revalidate} />
+            <Action title="Open in HTML" onAction={handleOpenHtml} />
+          </ActionPanel>
+        }
+      />
+    );
+  }
 }

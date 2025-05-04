@@ -1,19 +1,12 @@
 import { withCache } from "@raycast/utils";
 
-import {
-  callOpenAI,
-  callOpenAIThread
-} from './openaiApi.js';
+import { callOpenAI, callOpenAIThread } from "./openaiApi.js";
 
-import {
-  getAllUsers,
-  fetchFullThread,
-  getThreadsForChannel,
-} from './slackApi.js';
+import { getAllUsers, fetchFullThread, getThreadsForChannel } from "./slackApi.js";
 
 let userMap = {};
 
-// ────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
 // Shared helpers
 
 // Turn a thread URL | ts → {channelId, threadTs}
@@ -21,16 +14,16 @@ function parseThread(input) {
   // URL pattern: https://…/archives/C12345/p1714445821123456
   if (/^https?:\/\//i.test(input)) {
     const m = input.match(/archives\/([A-Z0-9]+)\/p(\d{16})/);
-    if (!m) throw new Error('Unrecognised Slack thread URL');
+    if (!m) throw new Error("Unrecognised Slack thread URL");
     return { channelId: m[1], threadTs: `${Number(m[2]) / 1000000}` };
   }
   // raw ts => we still need channelId
-  throw new Error('Raw thread_ts requires full URL so we know the channel ID');
+  throw new Error("Raw thread_ts requires full URL so we know the channel ID");
 }
 
 async function loadAllUsers() {
   userMap = await withCache(getAllUsers, {
-    maxAge: (60 * 60 * 1000) * 5, // 5 hours in ms
+    maxAge: 60 * 60 * 1000 * 5, // 5 hours in ms
   })();
   return userMap;
 }
@@ -50,33 +43,29 @@ function buildPromptBody(messages, itemIdx = 1) {
     `Item ${itemIdx}:`,
     ...messages.map((m) => {
       const name = getUserName(m.user);
-      const txt = replaceUserMentions(
-        m.text?.replace(/\n/g, ' ') ?? '',
-      );
+      const txt = replaceUserMentions(m.text?.replace(/\n/g, " ") ?? "");
       return `- @${name}: ${txt}`;
     }),
-    '',
-  ].join('\n');
+    "",
+  ].join("\n");
 }
 
-// ==============================================================
+// ──────────────────────────────────────────────────────────────
 
 // Public API
-export async function summarizeChannel(channelName, days = 7) {
+export async function summarizeChannel(channelName, days = 7, customPrompt) {
   await loadAllUsers();
 
   const oldestTs = Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
   const result = await getThreadsForChannel(channelName, oldestTs);
-  if (!result) throw new Error('No recent activity in that channel.');
+  if (!result) throw new Error("No threads found in the channel in the specified duration.");
 
-  const promptBody = result.bundles
-    .map((b, i) => buildPromptBody(b.messages, i + 1))
-    .join('\n');
+  const promptBody = result.bundles.map((b, i) => buildPromptBody(b.messages, i + 1)).join("\n");
 
-  return callOpenAI(promptBody, channelName);
+  return callOpenAI(promptBody, channelName, customPrompt);
 }
 
-export async function summarizeThread(rawInput) {
+export async function summarizeThread(rawInput, customPrompt) {
   await loadAllUsers();
 
   const { channelId, threadTs } = parseThread(rawInput);
@@ -84,7 +73,6 @@ export async function summarizeThread(rawInput) {
   const promptBody = buildPromptBody(messages);
 
   console.log(`Prompt body:\n${promptBody}`);
-  
 
-  return callOpenAIThread(promptBody);
+  return callOpenAIThread(promptBody, customPrompt);
 }

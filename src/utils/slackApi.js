@@ -141,3 +141,28 @@ export async function getThreadsForChannel(channelName, oldestTs) {
   bundles.sort((a, b) => a.ts - b.ts);
   return { bundles };
 }
+
+/**
+ * List all channels available to the bot.
+ * Returns an array of { id, name } objects sorted alphabetically.
+ */
+export async function listChannels() {
+  const channels = [];
+  let cursor;
+  do {
+    const res = await slackCall("conversations.list", {
+      exclude_archived: true,
+      limit: 1000,
+      cursor,
+      types: "public_channel,private_channel",
+    });
+    channels.push(
+      ...res.channels.map((c) => ({
+        id: c.id,
+        name: c.name,
+      })),
+    );
+    cursor = res.response_metadata?.next_cursor;
+  } while (cursor);
+  return channels.sort((a, b) => a.name.localeCompare(b.name));
+}
