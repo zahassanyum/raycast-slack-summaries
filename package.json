@@ -64,14 +64,6 @@
       "required": true,
       "title": "OpenAI API Key",
       "placeholder": "{OpenAI API Key}"
-    },
-    {
-      "name": "SLACK_BOT_TOKEN",
-      "description": "Slack Bot Token",
-      "type": "password",
-      "required": true,
-      "title": "Slack Bot Token",
-      "placeholder": "{Slack Bot Token}"
     }
   ]
 }

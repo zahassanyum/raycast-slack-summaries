@@ -1,12 +1,10 @@
-import { App } from "@slack/bolt";
-import { getPreferenceValues } from "@raycast/api";
+import { getSlackApp } from "./slackAuth";
 
-const preferences = getPreferenceValues();
-
-const slack = new App({
-  token: process.env.SLACK_BOT_TOKEN || preferences.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET || "dummy",
-}).client;
+let appPromise = null;
+function slack() {
+  if (!appPromise) appPromise = getSlackApp();
+  return appPromise.then((app) => app.client);
+}
 
 /**
  * Wrapper for Slack API calls with rate limit handling.
@@ -14,7 +12,7 @@ const slack = new App({
 export async function slackCall(method, params) {
   while (true) {
     try {
-      return await slack.apiCall(method, params);
+      return await (await slack()).apiCall(method, params);
     } catch (e) {
       const isRateLimited = e.code === "slack_webapi_platform_error" && e.data?.error === "ratelimited";
       if (isRateLimited) {
