@@ -46,10 +46,12 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
   async function handleOpenHtml() {
     if (!summary) return;
 
-    const html = `<html><meta charset="utf-8"><body>
-      <pre style="white-space:pre-wrap;font-family:sans-serif;font-size:14px;line-height:1.5;">
-      ${summary.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
-      </pre></body></html>`;
+    const html = `<html>
+      <meta charset="utf-8">
+      <body style="margin:0;padding:0;background:#f9f9f9;">
+        <div style="font-family:system-ui,sans-serif;font-size:16px;line-height:1.7;padding:32px;max-width:700px;margin:auto;margin-top:40px;background:#fff;box-shadow:0 2px 8px #0001;white-space:pre-wrap;border-radius:10px;">${summary.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+      </body>
+    </html>`;
 
     const uri = `data:text/html,${encodeURIComponent(html)}`;
 
@@ -99,7 +101,7 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
         isLoading={isLoading}
         markdown={
           error
-            ? `**Error:** Couldn't generate summary.\n\n${error instanceof Error ? error.message : String(error)}`
+            ? `**Error:** Couldn't generate summary.\n\n\`\`${error instanceof Error ? error.message : String(error)}\`\``
             : (summary ?? "Summarizing…")
         }
         navigationTitle="Thread summary"

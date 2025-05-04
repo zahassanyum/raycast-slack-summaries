@@ -1,6 +1,6 @@
 import { withCache } from "@raycast/utils";
 
-import { callOpenAI, callOpenAIThread } from "./openaiApi.js";
+import { callOpenAIChannel, callOpenAIThread } from "./openaiApi.js";
 
 import { getAllUsers, fetchFullThread, getThreadsForChannel } from "./slackApi.js";
 
@@ -62,7 +62,7 @@ export async function summarizeChannel(channelName, days = 7, customPrompt) {
 
   const promptBody = result.bundles.map((b, i) => buildPromptBody(b.messages, i + 1)).join("\n");
 
-  return callOpenAI(promptBody, channelName, customPrompt);
+  return callOpenAIChannel(promptBody, channelName, customPrompt);
 }
 
 export async function summarizeThread(rawInput, customPrompt) {
@@ -71,8 +71,6 @@ export async function summarizeThread(rawInput, customPrompt) {
   const { channelId, threadTs } = parseThread(rawInput);
   const messages = await fetchFullThread(channelId, threadTs);
   const promptBody = buildPromptBody(messages);
-
-  console.log(`Prompt body:\n${promptBody}`);
 
   return callOpenAIThread(promptBody, customPrompt);
 }

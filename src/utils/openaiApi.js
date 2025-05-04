@@ -8,6 +8,8 @@ const defaultModel = preferences.defaultOpenaiModel || "gpt-4.1";
 const openai = new OpenAI({ apiKey });
 
 async function callOpenAIChatCompletion(messages, model = defaultModel) {
+  console.log(messages);
+
   const res = await openai.chat.completions.create({
     model,
     temperature: 0.2,
@@ -16,7 +18,7 @@ async function callOpenAIChatCompletion(messages, model = defaultModel) {
   return res.choices?.[0]?.message?.content?.trim() || "[No summary]";
 }
 
-export async function callOpenAI(promptBody, channelName, customPrompt) {
+export async function callOpenAIChannel(promptBody, channelName, customPrompt) {
   console.log("Calling OpenAI (channel prompt)…");
 
   const promptHeader =
@@ -37,8 +39,6 @@ export async function callOpenAI(promptBody, channelName, customPrompt) {
 }
 
 export async function callOpenAIThread(promptBody, customPrompt) {
-
-  
   console.log("Calling OpenAI (thread prompt)…");
 
   const promptHeader =
