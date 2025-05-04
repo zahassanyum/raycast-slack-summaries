@@ -23,17 +23,27 @@
       "title": "Summarize Thread",
       "subtitle": "Summarize replies of a Slack thread",
       "description": "Summarize replies of a Slack thread",
-      "mode": "view"
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "thread",
+          "placeholder": "https://slack.com/archives/{channel_id}/{thread_ts}",
+          "type": "text",
+          "required": true
+        }
+      ]
     }
   ],
   "dependencies": {
     "@raycast/api": "^1.97.0",
-    "@raycast/utils": "^1.17.0"
+    "@raycast/utils": "^1.17.0",
+    "@slack/bolt": "^4.2.1",
+    "openai": "^4.95.1"
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.0.4",
     "@types/node": "22.13.10",
-    "@types/react": "19.0.10",
+    "@types/react": "^19.0.10",
     "eslint": "^9.22.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"
@@ -45,5 +55,23 @@
     "lint": "ray lint",
     "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1",
     "publish": "npx @raycast/api@latest publish"
-  }
+  },
+  "preferences": [
+    {
+      "name": "OPENAI_API_KEY",
+      "description": "OpenAI API Key",
+      "type": "password",
+      "required": true,
+      "title": "OpenAI API Key",
+      "placeholder": "{OpenAI API Key}"
+    },
+    {
+      "name": "SLACK_BOT_TOKEN",
+      "description": "Slack Bot Token",
+      "type": "password",
+      "required": true,
+      "title": "Slack Bot Token",
+      "placeholder": "{Slack Bot Token}"
+    }
+  ]
 }

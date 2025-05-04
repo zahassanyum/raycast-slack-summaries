@@ -1,3 +1,3 @@
 # Slack Summaries
 
-Summarize Slack channels and threads using OpenAI
+Raycast plugin to summarize Slack channels and threads using OpenAI.
