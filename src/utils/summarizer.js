@@ -3,7 +3,7 @@ import { withCache } from "@raycast/utils";
 import {
   callOpenAI,
   callOpenAIThread
-} from './openai';
+} from './openaiApi.js';
 
 import {
   getAllUsers,
