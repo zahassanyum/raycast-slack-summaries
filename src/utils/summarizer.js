@@ -40,7 +40,7 @@ function replaceUserMentions(text = "") {
 
 function buildPromptBody(messages, itemIdx = 1) {
   return [
-    `Item ${itemIdx}:`,
+    `Thread ${itemIdx}:`,
     ...messages.map((m) => {
       const name = getUserName(m.user);
       const txt = replaceUserMentions(m.text?.replace(/\n/g, " ") ?? "");
