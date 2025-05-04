@@ -84,7 +84,7 @@
       "type": "password",
       "required": true,
       "title": "OpenAI API Key",
-      "placeholder": "{OpenAI API Key}"
+      "placeholder": "sk-proj-HGZ..."
     },
     {
       "name": "defaultOpenaiModel",
