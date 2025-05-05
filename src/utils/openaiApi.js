@@ -8,8 +8,6 @@ const defaultModel = preferences.defaultOpenaiModel || "gpt-4.1";
 const openai = new OpenAI({ apiKey });
 
 async function callOpenAIChatCompletion(messages, model = defaultModel) {
-  console.log(messages);
-
   const res = await openai.chat.completions.create({
     model,
     temperature: 0.2,

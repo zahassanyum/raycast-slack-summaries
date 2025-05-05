@@ -1,5 +1,5 @@
 import { ActionPanel, Action, Detail, Form, LaunchProps, showToast, Toast, getPreferenceValues } from "@raycast/api";
-import { usePromise, runAppleScript, showFailureToast } from "@raycast/utils";
+import { usePromise } from "@raycast/utils";
 import { useState } from "react";
 import { summarizeThread } from "./utils/summarizer";
 
@@ -39,32 +39,6 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
       }
       // Rethrow so the hook can propagate the error to the UI
       throw error;
-    }
-  }
-
-  /* Render the markdown inside a tiny HTML shell and open it via AppleScript */
-  async function handleOpenHtml() {
-    if (!summary) return;
-
-    const html = `<html>
-      <meta charset="utf-8">
-      <body style="margin:0;padding:0;background:#f9f9f9;">
-        <div style="font-family:system-ui,sans-serif;font-size:16px;line-height:1.7;padding:32px;max-width:700px;margin:auto;margin-top:40px;background:#fff;box-shadow:0 2px 8px #0001;white-space:pre-wrap;border-radius:10px;">${summary.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-      </body>
-    </html>`;
-
-    const uri = `data:text/html,${encodeURIComponent(html)}`;
-
-    try {
-      // Uses the default browser via AppleScript
-      await runAppleScript(`
-        tell application "Chrome"
-          activate
-          open location "${uri}"
-        end tell
-      `);
-    } catch (err) {
-      showFailureToast("Unable to open in browser", err as Error);
     }
   }
 
@@ -109,7 +83,6 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
           <ActionPanel>
             <Action.CopyToClipboard title="Copy Summary" content={summary ?? ""} />
             <Action title="Regenerate" onAction={revalidate} />
-            <Action title="Open in Browser" onAction={handleOpenHtml} />
           </ActionPanel>
         }
       />
