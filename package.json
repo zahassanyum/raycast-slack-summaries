@@ -1,8 +1,8 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "slack-summaries",
+  "name": "slack-summarizer",
   "title": "Slack Summarizer",
-  "description": "Summarize Slack channels and threads using OpenAI",
+  "description": "Summarize Slack channels, threads and messages using OpenAI",
   "icon": "extension-icon.png",
   "author": "hassan_ahmed",
   "owner": "respond-io",
@@ -14,7 +14,7 @@
     {
       "name": "summarize-channel",
       "title": "Summarize Slack Channel",
-      "subtitle": "Summarize a Slack channel threads",
+      "subtitle": "Slack",
       "description": "Summarize a Slack channel threads",
       "mode": "view",
       "arguments": [],
@@ -32,14 +32,14 @@
     {
       "name": "summarize-thread",
       "title": "Summarize Slack Thread",
-      "subtitle": "Summarize replies of a Slack thread",
+      "subtitle": "Slack",
       "description": "Summarize replies of a Slack thread",
       "mode": "view",
       "arguments": [
         {
           "name": "thread",
           "type": "text",
-          "placeholder": "Thread URL or ts",
+          "placeholder": "Thread URL",
           "required": false
         }
       ],
@@ -89,8 +89,8 @@
     {
       "name": "defaultOpenaiModel",
       "type": "textfield",
-      "title": "Default OpenAI model",
-      "description": "Model name passed to OpenAI when no model is specified",
+      "title": "OpenAI Model",
+      "description": "Model name passed to OpenAI API",
       "placeholder": "gpt-4.1",
       "default": "gpt-4.1",
       "required": true

@@ -1,7 +1,7 @@
 import { ActionPanel, Action, Detail, Form, LaunchProps, showToast, Toast, getPreferenceValues } from "@raycast/api";
 import { usePromise, runAppleScript, showFailureToast } from "@raycast/utils";
 import { useState } from "react";
-import { summarizeThread } from "./utils/summarizer.js";
+import { summarizeThread } from "./utils/summarizer";
 
 interface Arguments {
   thread?: string;
@@ -92,7 +92,7 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
           </ActionPanel>
         }
       >
-        <Form.TextField id="thread" title="Thread URL or Timestamp" placeholder="Paste Slack thread link…" />
+        <Form.TextField id="thread" title="Thread (or Message) URL" placeholder="Paste Slack thread link…" />
       </Form>
     );
   } else {
@@ -107,8 +107,9 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
         navigationTitle="Thread summary"
         actions={
           <ActionPanel>
+            <Action.CopyToClipboard title="Copy Summary" content={summary ?? ""} />
             <Action title="Regenerate" onAction={revalidate} />
-            <Action title="Open in HTML" onAction={handleOpenHtml} />
+            <Action title="Open in Browser" onAction={handleOpenHtml} />
           </ActionPanel>
         }
       />

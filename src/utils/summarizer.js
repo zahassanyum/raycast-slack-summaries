@@ -1,8 +1,13 @@
 import { withCache } from "@raycast/utils";
 
-import { callOpenAIChannel, callOpenAIThread } from "./openaiApi.js";
+import { callOpenAIChannel, callOpenAIThread } from "./openaiApi";
 
-import { getAllUsers, fetchFullThread, getThreadsForChannel } from "./slackApi.js";
+import {
+  getChannelIdByName,
+  getAllUsers,
+  fetchFullThread,
+  getThreadsForChannel,
+} from "./slackApi";
 
 let userMap = {};
 
@@ -18,12 +23,12 @@ function parseThread(input) {
     return { channelId: m[1], threadTs: `${Number(m[2]) / 1000000}` };
   }
   // raw ts => we still need channelId
-  throw new Error("Raw thread_ts requires full URL so we know the channel ID");
+  throw new Error("Unrecognised Slack thread URL");
 }
 
 async function loadAllUsers() {
   userMap = await withCache(getAllUsers, {
-    maxAge: 60 * 60 * 1000 * 5, // 5 hours in ms
+    maxAge: 60 * 60 * 1000 * 24 * 14, // 14 days in ms
   })();
   return userMap;
 }
@@ -56,8 +61,10 @@ function buildPromptBody(messages, itemIdx = 1) {
 export async function summarizeChannel(channelName, days = 7, customPrompt) {
   await loadAllUsers();
 
+  const channelId = await getChannelIdByName(channelName);
+
   const oldestTs = Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
-  const result = await getThreadsForChannel(channelName, oldestTs);
+  const result = await getThreadsForChannel(channelId, oldestTs);
   if (!result) throw new Error("No threads found in the channel in the specified duration.");
 
   const promptBody = result.bundles.map((b, i) => buildPromptBody(b.messages, i + 1)).join("\n");

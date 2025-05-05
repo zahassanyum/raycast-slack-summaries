@@ -12,7 +12,6 @@ const slackOAuth = OAuthService.slack({
     "mpim:read",
     "mpim:history",
     "users:read",
-    "search:read",
   ].join(","),
 });
 

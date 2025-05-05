@@ -122,8 +122,7 @@ export async function fetchChannelThreads(channelId, oldestTs) {
 /**
  * Get all threads, with the replies, for a channel since oldestTs.
  */
-export async function getThreadsForChannel(channelName, oldestTs) {
-  const channelId = await getChannelIdByName(channelName);
+export async function getThreadsForChannel(channelId, oldestTs) {
   const { parents, singles } = await fetchChannelThreads(channelId, oldestTs);
 
   if (!parents.length && !singles.length) return null;
@@ -143,12 +142,13 @@ export async function getThreadsForChannel(channelName, oldestTs) {
 }
 
 /**
- * List all channels available to the bot.
+ * List all channels available to the user.
  * Returns an array of { id, name } objects sorted alphabetically.
  */
 export async function listChannels() {
   const channels = [];
   let cursor;
+  console.log("Fetching channels list…");
   do {
     const res = await slackCall("conversations.list", {
       exclude_archived: true,
