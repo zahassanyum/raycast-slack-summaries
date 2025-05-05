@@ -64,7 +64,7 @@ export default function Command() {
       }
     >
       <Form.Dropdown id="channel" title="Channel" isLoading={isChannelLoading} throttle placeholder="Select channel…">
-        {channels?.map((c) => <Form.Dropdown.Item key={c.id} value={c.name} title={`#${c.name}`} />)}
+        {channels?.map((c: { id: string; name: string }) => <Form.Dropdown.Item key={c.id} value={c.name} title={`#${c.name}`} />)}
       </Form.Dropdown>
       <Form.TextField id="days" title="Days to Look Back" placeholder="7" defaultValue="7" />
     </Form>

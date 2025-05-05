@@ -1,7 +1,5 @@
 import { withCache } from "@raycast/utils";
-
 import { callOpenAIChannel, callOpenAIThread } from "./openaiApi";
-
 import { getChannelIdByName, getAllUsers, fetchFullThread, getThreadsForChannel } from "./slackApi";
 
 let userMap = {};
