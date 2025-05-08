@@ -1,6 +1,6 @@
-import { ActionPanel, Action, Detail, Form, LaunchProps, showToast, Toast, getPreferenceValues } from "@raycast/api";
+import { ActionPanel, Action, Detail, Form, LaunchProps, showToast, Toast, getPreferenceValues, Clipboard } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { summarizeThread } from "./utils/summarizer";
 
 interface Arguments {
@@ -9,6 +9,19 @@ interface Arguments {
 
 export default function Command({ arguments: { thread: initialThread } }: LaunchProps<{ arguments: Arguments }>) {
   const [thread, setThread] = useState<string | undefined>(initialThread);
+  const [inputValue, setInputValue] = useState<string>("");
+
+  useEffect(() => {
+    if (!initialThread) {
+      (async () => {
+        const text = await Clipboard.readText();
+        if (text && isSlackLink(text)) {
+          setInputValue(text);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const preferences = getPreferenceValues();
   const customPrompt = preferences.openaiPrompt;
@@ -66,7 +79,13 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
           </ActionPanel>
         }
       >
-        <Form.TextField id="thread" title="Thread (or Message) URL" placeholder="Paste Slack thread link…" />
+        <Form.TextField
+          id="thread"
+          title="Thread (or Message) URL"
+          placeholder="Paste Slack thread link…"
+          value={inputValue}
+          onChange={setInputValue}
+        />
       </Form>
     );
   } else {
@@ -88,4 +107,11 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
       />
     );
   }
+}
+
+/* ---------- Utils ---------- */
+function isSlackLink(text: string): boolean {
+  // Matches full Slack thread/message URLs, e.g. https://workspace.slack.com/archives/C12345678/p1234567890123456
+  const slackRegex = /^https?:\/\/[\w.-]+\.slack\.com\/archives\/\w+\/p\d+$/i;
+  return slackRegex.test(text.trim());
 }

@@ -37,15 +37,24 @@ function replaceUserMentions(text = "") {
 }
 
 function buildPromptBody(messages, itemIdx = 1) {
+  // Start the prompt body with a label for the thread, e.g., "Thread 1:"
   return [
     `Thread ${itemIdx}:`,
+    // Map over each message in the thread
     ...messages.map((m) => {
+      // Get the display name or real name of the user who sent the message
       const name = getUserName(m.user);
+
+      // Clean up the message text: remove newlines and replace Slack user mentions
       const txt = replaceUserMentions(m.text?.replace(/\n/g, " ") ?? "");
+
+      // Format each message as a bullet point with the username and cleaned message text
       return `- @${name}: ${txt}`;
     }),
+
+    // Add a blank line after the thread content
     "",
-  ].join("\n");
+  ].join("\n"); // Join the array into a single string with newline characters
 }
 
 // ──────────────────────────────────────────────────────────────
