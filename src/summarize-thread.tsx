@@ -1,4 +1,14 @@
-import { ActionPanel, Action, Detail, Form, LaunchProps, showToast, Toast, getPreferenceValues, Clipboard } from "@raycast/api";
+import {
+  ActionPanel,
+  Action,
+  Detail,
+  Form,
+  LaunchProps,
+  showToast,
+  Toast,
+  getPreferenceValues,
+  Clipboard,
+} from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { useState, useEffect } from "react";
 import { summarizeThread } from "./utils/summarizer";
@@ -7,55 +17,121 @@ interface Arguments {
   thread?: string;
 }
 
-export default function Command({ arguments: { thread: initialThread } }: LaunchProps<{ arguments: Arguments }>) {
-  const [thread, setThread] = useState<string | undefined>(initialThread);
+interface Preferences {
+  openaiPrompt: string;
+}
+
+// Custom hook for handling toast notifications
+function useToast() {
+  const showLoadingToast = async (title: string) => {
+    return await showToast({
+      style: Toast.Style.Animated,
+      title,
+    });
+  };
+
+  const showSuccessToast = async (toast: Toast, title: string, message: string) => {
+    toast.style = Toast.Style.Success;
+    toast.title = title;
+    toast.message = message;
+  };
+
+  const showErrorToast = async (toast: Toast, title: string, error: unknown) => {
+    toast.style = Toast.Style.Failure;
+    toast.title = title;
+    toast.message = error instanceof Error ? error.message : String(error);
+  };
+
+  return { showLoadingToast, showSuccessToast, showErrorToast };
+}
+
+// Thread Input Form Component
+function ThreadInputForm({ onSubmit }: { onSubmit: (thread: string) => void }) {
   const [inputValue, setInputValue] = useState<string>("");
 
-  useEffect(() => {
-    if (!initialThread) {
-      (async () => {
-        const text = await Clipboard.readText();
-        if (text && isSlackLink(text)) {
-          setInputValue(text);
-        }
-      })();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const preferences = getPreferenceValues();
-  const customPrompt = preferences.openaiPrompt;
-
-  /* ---------- Helpers ---------------------- */
-
-  /* Wrapped summarizer with Animated Toast */
-  async function handleSummarize(threadId: string) {
-    // Animated toast while the summary is being generated
-    const toast = await showToast({
-      style: Toast.Style.Animated,
-      title: "Generating summary...",
-    });
-
-    try {
-      const summary = await summarizeThread(threadId, customPrompt);
-
-      toast.style = Toast.Style.Success;
-      toast.title = "Completed";
-      toast.message = "Summary generated successfully.";
-
-      return summary;
-    } catch (error) {
-      toast.style = Toast.Style.Failure;
-      toast.title = "Couldn't generate summary";
-      if (error instanceof Error) {
-        toast.message = error.message;
-      }
-      // Rethrow so the hook can propagate the error to the UI
-      throw error;
-    }
+  function isSlackLink(text: string): boolean {
+    const slackRegex = /^https?:\/\/[\w.-]+\.slack\.com\/archives\/\w+\/p\d+$/i;
+    return slackRegex.test(text.trim());
   }
 
-  /* ---------- Data fetching ---------- */
+  useEffect(() => {
+    const checkClipboard = async () => {
+      const text = await Clipboard.readText();
+      if (text && isSlackLink(text)) {
+        setInputValue(text);
+      }
+    };
+    checkClipboard();
+  }, []);
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Summarize" onSubmit={(values: { thread: string }) => onSubmit(values.thread)} />
+        </ActionPanel>
+      }
+    >
+      <Form.TextField
+        id="thread"
+        title="Thread (or Message) URL"
+        placeholder="Paste Slack thread link…"
+        value={inputValue}
+        onChange={setInputValue}
+      />
+    </Form>
+  );
+}
+
+// Summary Display Component
+function SummaryDisplay({
+  isLoading,
+  summary,
+  error,
+  onRegenerate,
+}: {
+  isLoading: boolean;
+  summary?: string;
+  error?: Error;
+  onRegenerate: () => void;
+}) {
+  const markdown = error
+    ? `**Error:** Couldn't generate summary.\n\n\`\`${error.message}\`\``
+    : (summary ?? "Summarizing…");
+
+  return (
+    <Detail
+      isLoading={isLoading}
+      markdown={markdown}
+      navigationTitle="Thread summary"
+      actions={
+        <ActionPanel>
+          <Action.CopyToClipboard title="Copy Summary" content={summary ?? ""} />
+          <Action title="Regenerate" onAction={onRegenerate} />
+        </ActionPanel>
+      }
+    />
+  );
+}
+
+export default function Command({ arguments: { thread: initialThread } }: LaunchProps<{ arguments: Arguments }>) {
+  const [thread, setThread] = useState<string | undefined>(initialThread);
+  const preferences = getPreferenceValues<Preferences>();
+  const { showLoadingToast, showSuccessToast, showErrorToast } = useToast();
+
+  const handleSummarize = async (threadURL: string) => {
+    const toast = await showLoadingToast("Generating summary...");
+
+    try {
+      const summary = await summarizeThread(threadURL, preferences.openaiPrompt);
+      await showSuccessToast(toast, "Completed", "Summary generated successfully.");
+      return summary;
+    } catch (error) {
+      await showErrorToast(toast, "Couldn't generate summary", error);
+      throw error;
+    }
+  };
+
   const {
     isLoading,
     data: summary,
@@ -63,55 +139,22 @@ export default function Command({ arguments: { thread: initialThread } }: Launch
     revalidate,
   } = usePromise(
     async (t) => {
-      if (!t) return undefined; // skip fetch until we have a thread id
+      if (!t) return undefined;
       return handleSummarize(t);
     },
     [thread],
   );
 
-  /* ---------- UI ---------- */
   if (!thread) {
-    return (
-      <Form
-        actions={
-          <ActionPanel>
-            <Action.SubmitForm title="Summarize" onSubmit={(values: { thread: string }) => setThread(values.thread)} />
-          </ActionPanel>
-        }
-      >
-        <Form.TextField
-          id="thread"
-          title="Thread (or Message) URL"
-          placeholder="Paste Slack thread link…"
-          value={inputValue}
-          onChange={setInputValue}
-        />
-      </Form>
-    );
-  } else {
-    return (
-      <Detail
-        isLoading={isLoading}
-        markdown={
-          error
-            ? `**Error:** Couldn't generate summary.\n\n\`\`${error instanceof Error ? error.message : String(error)}\`\``
-            : (summary ?? "Summarizing…")
-        }
-        navigationTitle="Thread summary"
-        actions={
-          <ActionPanel>
-            <Action.CopyToClipboard title="Copy Summary" content={summary ?? ""} />
-            <Action title="Regenerate" onAction={revalidate} />
-          </ActionPanel>
-        }
-      />
-    );
+    return <ThreadInputForm onSubmit={setThread} />;
   }
-}
 
-/* ---------- Utils ---------- */
-function isSlackLink(text: string): boolean {
-  // Matches full Slack thread/message URLs, e.g. https://workspace.slack.com/archives/C12345678/p1234567890123456
-  const slackRegex = /^https?:\/\/[\w.-]+\.slack\.com\/archives\/\w+\/p\d+$/i;
-  return slackRegex.test(text.trim());
+  return (
+    <SummaryDisplay
+      isLoading={isLoading}
+      summary={summary}
+      error={error instanceof Error ? error : undefined}
+      onRegenerate={revalidate}
+    />
+  );
 }
