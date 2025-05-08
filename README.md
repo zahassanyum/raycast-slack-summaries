@@ -11,7 +11,6 @@ Perfect for catching-up after vacations, keeping stakeholders in the loop, or tu
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | **Summarize Slack Channel** | Picks every standalone message and thread in a channel over the last *n* days and generates a concise digest.    |
 | **Summarize Slack Thread**  | Takes a single thread URL (or timestamp) and produces an executive summary, highlighting decisions & next steps. |
-| **Open in HTML** *(Thread)* | Renders the markdown summary in a clean HTML sheet—handy for sharing or copy-pasting elsewhere.                  |
 
 Both commands respect a **custom OpenAI prompt** so you can fine-tune tone, detail level, language, etc.
 
@@ -45,7 +44,7 @@ Both commands respect a **custom OpenAI prompt** so you can fine-tune tone, deta
    | Preference                   | Description                                            |
    | ---------------------------- | ------------------------------------------------------ |
    | **OpenAI API Key**           | `sk-...` key from your OpenAI dashboard                |
-   | **Default OpenAI Model**     | E.g. `gpt-4.1`, or `o3`             |
+   | **Default OpenAI Model**     | E.g. `gpt-4.1`,`gpt-4.1-nano`, `o3` etc.             |
 
 
 ### Authorize Slack
