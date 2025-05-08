@@ -70,13 +70,13 @@ export default function Command(
     async (url?: string) => {
       if (!url) return;
 
-      const t = await toast.showLoadingToast("Generating summary…");
+      await toast.showLoadingToast("Generating summary…");
       try {
         const result = await summarizeThread(url, openaiPrompt);
-        await toast.showSuccessToast(t, "Completed", "Summary generated successfully.");
+        toast.showSuccessToast("Completed", "Summary generated successfully.");
         return result;
       } catch (e) {
-        await toast.showErrorToast(t, "Couldn't generate summary", e);
+        toast.showErrorToast("Couldn't generate summary", e);
         throw e;
       }
     },

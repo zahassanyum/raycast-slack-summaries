@@ -74,18 +74,17 @@ export default function Command() {
     async (v?: FormValues) => {
       if (!v) return;
 
-      const t = await toast.showLoadingToast("Generating summary…");
+      await toast.showLoadingToast("Generating summary…");
       try {
         const days = Math.max(0, Number(v.days ?? DEFAULT_DAYS));
         const result = await summarizeChannel(v.channel, days, openaiPrompt);
-        await toast.showSuccessToast(
-          t,
+        toast.showSuccessToast(
           "Completed",
           `Summary for #${v.channel} generated successfully.`,
         );
         return result;
       } catch (e) {
-        await toast.showErrorToast(t, "Couldn't generate summary", e);
+        toast.showErrorToast("Couldn't generate summary", e);
         throw e;
       }
     },
