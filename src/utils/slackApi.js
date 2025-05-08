@@ -59,7 +59,7 @@ export async function fetchChannelIdByName(name) {
 export async function fetchAllUsers() {
   const usersById = {};
   let cursor = null;
-  
+
   console.log("Fetching users list…");
   do {
     const res = await slackCall("users.list", cursor ? { cursor } : {});

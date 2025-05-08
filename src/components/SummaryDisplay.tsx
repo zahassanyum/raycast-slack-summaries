@@ -10,7 +10,13 @@ interface SummaryDisplayProps {
   navigationTitle: string;
 }
 
-export function SummaryDisplay({ isLoading, summaryStream, error, onRegenerate, navigationTitle }: SummaryDisplayProps) {
+export function SummaryDisplay({
+  isLoading,
+  summaryStream,
+  error,
+  onRegenerate,
+  navigationTitle,
+}: SummaryDisplayProps) {
   const toast = useToast();
   const [finalSummary, setFinalSummary] = useState<string>("");
 

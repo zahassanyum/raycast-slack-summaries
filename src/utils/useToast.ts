@@ -22,7 +22,7 @@ export function useToast() {
   const showSuccessToast = (title: string, message?: string) => updateToast(Toast.Style.Success, title, message);
 
   // Flip the same toast to "error"
-  const showErrorToast = (title: string, error: unknown) => 
+  const showErrorToast = (title: string, error: unknown) =>
     updateToast(Toast.Style.Failure, title, error instanceof Error ? error.message : String(error));
 
   // Hide and forget the toast
