@@ -1,74 +1,106 @@
-import { Action, ActionPanel, Detail, Form, Toast, showToast, useNavigation, getPreferenceValues } from "@raycast/api";
+import { Action, ActionPanel, Detail, Form, useNavigation, getPreferenceValues } from "@raycast/api";
 import { useState } from "react";
 import { usePromise, withCache } from "@raycast/utils";
 import { summarizeChannel } from "./utils/summarizer";
 import { listChannels } from "./utils/slackApi";
+import { useToast } from "./utils/useToast";
+import { SummaryDisplay } from "./components/SummaryDisplay";
 
-export default function Command() {
-  const { push } = useNavigation();
-  const [isLoading, setLoading] = useState(false);
-  // Cache the channel list for 24 h to avoid hitting Slack rate limits
-  const cachedListChannels = withCache(listChannels, { maxAge: 24 * 60 * 60 * 1000 });
+interface Channel {
+  id: string;
+  name: string;
+}
+
+interface FormValues {
+  channel: string;
+  days: string;
+}
+
+interface Preferences {
+  openaiPrompt: string;
+}
+
+const DEFAULT_DAYS = "7";
+const CHANNELS_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+function ChannelForm({ 
+  onSubmit 
+}: { 
+  onSubmit: (values: FormValues) => void;
+}) {
+  // Cache the channel list for 24h to avoid hitting Slack rate limits
+  const cachedListChannels = withCache(listChannels, { maxAge: CHANNELS_CACHE_DURATION });
   const { data: channels, isLoading: isChannelLoading } = usePromise(cachedListChannels, []);
-
-  // Command‑specific OpenAI prompt from preferences
-  const preferences = getPreferenceValues();
-  const customPrompt = preferences.openaiPrompt;
-
-  async function handleSubmit(values: { channel: string; days: string }) {
-    // Show a toast to indicate that the summary is being generated
-    const toast = await showToast({
-      style: Toast.Style.Animated,
-      title: "Generating summary...",
-    });
-
-    setLoading(true);
-
-    try {
-      const daysNumber = Math.max(0, Number(values.days ?? 7));
-      const summary = await summarizeChannel(values.channel, daysNumber, customPrompt);
-
-      push(
-        <Detail
-          markdown={summary}
-          navigationTitle={`#${values.channel}`}
-          actions={
-            <ActionPanel>
-              <Action.CopyToClipboard title="Copy Summary" content={summary} />
-            </ActionPanel>
-          }
-        />,
-      );
-
-      toast.style = Toast.Style.Success;
-      toast.title = "Completed";
-      toast.message = `Summary for #${values.channel} generated successfully.`;
-    } catch (err) {
-      toast.style = Toast.Style.Failure;
-      toast.title = "Couldn't generate summary";
-      if (err instanceof Error) {
-        toast.message = err.message;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <Form
-      isLoading={isLoading}
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Summarize" onSubmit={handleSubmit} />
+          <Action.SubmitForm title="Summarize" onSubmit={onSubmit} />
         </ActionPanel>
       }
     >
-      <Form.Dropdown id="channel" title="Channel" isLoading={isChannelLoading} throttle placeholder="Select channel…">
-        {channels?.map((c: { id: string; name: string }) => (
-          <Form.Dropdown.Item key={c.id} value={c.name} title={`#${c.name}`} />
+      <Form.Dropdown 
+        id="channel" 
+        title="Channel" 
+        isLoading={isChannelLoading} 
+        throttle 
+        placeholder="Select channel…"
+      >
+        {channels?.map((channel: Channel) => (
+          <Form.Dropdown.Item 
+            key={channel.id} 
+            value={channel.name} 
+            title={`#${channel.name}`} 
+          />
         ))}
       </Form.Dropdown>
-      <Form.TextField id="days" title="Days to Look Back" placeholder="7" defaultValue="7" />
+      <Form.TextField 
+        id="days" 
+        title="Days to Look Back" 
+        placeholder={DEFAULT_DAYS} 
+        defaultValue={DEFAULT_DAYS} 
+      />
     </Form>
+  );
+}
+
+export default function Command() {
+  const [values, setValues] = useState<FormValues>();
+  const { openaiPrompt } = getPreferenceValues<Preferences>();
+  const toast = useToast();
+
+  const { isLoading, data: summary, error, revalidate } = usePromise(
+    async (v?: FormValues) => {
+      if (!v) return;
+
+      const t = await toast.showLoadingToast("Generating summary…");
+      try {
+        const days = Math.max(0, Number(v.days ?? DEFAULT_DAYS));
+        const result = await summarizeChannel(v.channel, days, openaiPrompt);
+        await toast.showSuccessToast(
+          t,
+          "Completed",
+          `Summary for #${v.channel} generated successfully.`,
+        );
+        return result;
+      } catch (e) {
+        await toast.showErrorToast(t, "Couldn't generate summary", e);
+        throw e;
+      }
+    },
+    [values],
+  );
+
+  return values ? (
+    <SummaryDisplay
+      isLoading={isLoading}
+      summary={summary}
+      error={error as Error | undefined}
+      onRegenerate={revalidate}
+      navigationTitle="Channel summary"
+    />
+  ) : (
+    <ChannelForm onSubmit={setValues} />
   );
 }
