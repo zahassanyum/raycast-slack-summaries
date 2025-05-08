@@ -1,12 +1,4 @@
-import {
-  ActionPanel,
-  Action,
-  Detail,
-  Form,
-  LaunchProps,
-  getPreferenceValues,
-  Clipboard,
-} from "@raycast/api";
+import { ActionPanel, Action, Form, LaunchProps, getPreferenceValues, Clipboard } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { useState, useEffect } from "react";
 import { summarizeThread } from "./utils/summarizer";
@@ -59,21 +51,21 @@ function ThreadInputForm({ onSubmit }: { onSubmit: (thread: string) => void }) {
   );
 }
 
-export default function Command(
-  { arguments: { thread: initialThread } }: LaunchProps<{ arguments: Arguments }>
-) {
+export default function Command({ arguments: { thread: initialThread } }: LaunchProps<{ arguments: Arguments }>) {
   const [thread, setThread] = useState(initialThread);
   const { openaiPrompt } = getPreferenceValues<Preferences>();
   const toast = useToast();
 
-  const { isLoading, data: summary, error, revalidate } = usePromise(
-    async (url?: string) => {
-      if (!url) return;
-
-      await toast.showLoadingToast("Generating summary…");
+  const {
+    isLoading,
+    data: summaryStream,
+    error,
+    revalidate,
+  } = usePromise(
+    async (threadUrl?: string) => {
+      if (!threadUrl) return;
       try {
-        const result = await summarizeThread(url, openaiPrompt);
-        toast.showSuccessToast("Completed", "Summary generated successfully.");
+        const result = await summarizeThread(threadUrl, openaiPrompt);
         return result;
       } catch (e) {
         toast.showErrorToast("Couldn't generate summary", e);
@@ -86,7 +78,7 @@ export default function Command(
   return thread ? (
     <SummaryDisplay
       isLoading={isLoading}
-      summary={summary}
+      summaryStream={summaryStream}
       error={error as Error | undefined}
       onRegenerate={revalidate}
       navigationTitle="Thread summary"

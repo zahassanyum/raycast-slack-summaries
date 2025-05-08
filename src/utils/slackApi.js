@@ -31,7 +31,7 @@ const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 /**
  * Get channel ID by channel name.
  */
-export async function getChannelIdByName(name) {
+export async function fetchChannelIdByName(name) {
   let cursor;
 
   do {
@@ -54,23 +54,13 @@ export async function getChannelIdByName(name) {
 }
 
 /**
- * Fetch all messages in a thread.
- */
-export async function fetchFullThread(channelId, threadTs) {
-  const res = await slackCall("conversations.replies", {
-    channel: channelId,
-    ts: threadTs,
-    limit: 200,
-  });
-  return res.messages;
-}
-
-/**
  * Fetch every (non-deleted) member and return a map { U123: { ...user }, ... }
  */
-export async function getAllUsers() {
+export async function fetchAllUsers() {
   const usersById = {};
   let cursor = null;
+  
+  console.log("Fetching users list…");
   do {
     const res = await slackCall("users.list", cursor ? { cursor } : {});
     if (!res.ok) throw new Error(`Slack API error: ${res.error}`);
@@ -85,11 +75,23 @@ export async function getAllUsers() {
 }
 
 /**
- * Fetch threads and single messages from a channel since oldestTs.
+ * Fetch all messages in a thread.
  */
-export async function fetchChannelThreads(channelId, oldestTs) {
-  const parents = []; // Thread parent messages
-  const singles = []; // Standalone messages
+export async function fetchFullThread(channelId, threadTs) {
+  const res = await slackCall("conversations.replies", {
+    channel: channelId,
+    ts: threadTs,
+    limit: 200,
+  });
+  return res.messages;
+}
+
+/**
+ * Get all threads and single messages for a channel since oldestTs.
+ * Returns { bundles: [{ ts: number, messages: Message[] }] } sorted by timestamp.
+ */
+export async function fetchThreadsForChannel(channelId, oldestTs) {
+  const bundles = [];
   let cursor;
 
   do {
@@ -100,44 +102,25 @@ export async function fetchChannelThreads(channelId, oldestTs) {
       cursor,
     });
 
-    // Categorize messages
-    res.messages.forEach((m) => {
-      // Thread parent (has thread_ts equal to its own ts)
-      if (m.thread_ts && m.thread_ts === m.ts) {
-        parents.push(m);
+    // Process all messages in a single pass
+    for (const msg of res.messages) {
+      if (msg.thread_ts === msg.ts) {
+        // Thread parent - fetch full thread
+        const fullThread = await fetchFullThread(channelId, msg.ts);
+        bundles.push({ ts: Number(msg.ts), messages: fullThread });
+      } else if (!msg.thread_ts) {
+        // Single message
+        bundles.push({ ts: Number(msg.ts), messages: [msg] });
       }
-      // Single message (no thread_ts)
-      else if (!m.thread_ts) {
-        singles.push(m);
-      }
-      // Note: thread replies (where thread_ts !== ts) are ignored here
-    });
+    }
 
     cursor = res.response_metadata?.next_cursor;
   } while (cursor);
 
-  return { parents, singles };
-}
-
-/**
- * Get all threads, with the replies, for a channel since oldestTs.
- */
-export async function getThreadsForChannel(channelId, oldestTs) {
-  const { parents, singles } = await fetchChannelThreads(channelId, oldestTs);
-
-  if (!parents.length && !singles.length) return null;
-
-  const bundles = [];
-
-  for (const parent of parents) {
-    const fullThread = await fetchFullThread(channelId, parent.thread_ts);
-    bundles.push({ ts: Number(fullThread[0].ts), messages: fullThread });
-  }
-  for (const single of singles) {
-    bundles.push({ ts: Number(single.ts), messages: [single] });
-  }
+  if (!bundles.length) return null;
 
   bundles.sort((a, b) => a.ts - b.ts);
+
   return { bundles };
 }
 
@@ -145,9 +128,10 @@ export async function getThreadsForChannel(channelId, oldestTs) {
  * List all channels available to the user.
  * Returns an array of { id, name } objects sorted alphabetically.
  */
-export async function listChannels() {
+export async function fetchChannels() {
   const channels = [];
   let cursor;
+
   console.log("Fetching channels list…");
   do {
     const res = await slackCall("conversations.list", {

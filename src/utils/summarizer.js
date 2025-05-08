@@ -1,6 +1,6 @@
 import { withCache } from "@raycast/utils";
 import { callOpenAIChannel, callOpenAIThread } from "./openaiApi";
-import { getChannelIdByName, getAllUsers, fetchFullThread, getThreadsForChannel } from "./slackApi";
+import { fetchChannelIdByName, fetchAllUsers, fetchFullThread, fetchThreadsForChannel } from "./slackApi";
 
 let userMap = {};
 
@@ -20,7 +20,7 @@ function parseThread(input) {
 }
 
 async function loadAllUsers() {
-  userMap = await withCache(getAllUsers, {
+  userMap = await withCache(fetchAllUsers, {
     maxAge: 60 * 60 * 1000 * 24 * 14, // 14 days in ms
   })();
   return userMap;
@@ -63,10 +63,10 @@ function buildPromptBody(messages, itemIdx = 1) {
 export async function summarizeChannel(channelName, days = 7, customPrompt) {
   await loadAllUsers();
 
-  const channelId = await getChannelIdByName(channelName);
+  const channelId = await fetchChannelIdByName(channelName);
 
   const oldestTs = Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
-  const result = await getThreadsForChannel(channelId, oldestTs);
+  const result = await fetchThreadsForChannel(channelId, oldestTs);
   if (!result) throw new Error("No threads found in the channel in the specified duration.");
 
   const promptBody = result.bundles.map((b, i) => buildPromptBody(b.messages, i + 1)).join("\n");
